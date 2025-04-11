@@ -1,110 +1,136 @@
-first :
+2.a.Minimum-cost spanning
+
 #include <stdio.h>
-#include <string.h>
-#include <ctype.h>
-
-int n, m = 0, p, i = 0, j = 0;
-char a[10][10], f[10];
-
-void follow(char c);
-void first(char c);
-
+#include <stdlib.h>
+#define INF 9999
+#define MAX 20
+int G[MAX][MAX], S[MAX][MAX], n;
+int prims() {
+    int cost[MAX][MAX], dist[MAX], from[MAX], visited[MAX] = {1};
+    int min, u, v, total = 0, edges = n - 1;
+    for (int i = 0; i < n; i++) {
+        dist[i] = INF;
+        for (int j = 0; j < n; j++) {
+            cost[i][j] = (G[i][j] == 0) ? INF : G[i][j];
+            S[i][j] = 0;
+        }
+    }
+    for (int i = 1; i < n; i++) {
+        dist[i] = cost[0][i];
+        from[i] = 0;
+    }
+    while (edges--) {
+        min = INF;
+        for (int i = 1; i < n; i++)
+            if (!visited[i] && dist[i] < min)
+                min = dist[i], v = i;
+        u = from[v];
+        S[u][v] = S[v][u] = dist[v];
+        visited[v] = 1;
+        total += cost[u][v];
+        for (int i = 1; i < n; i++)
+            if (!visited[i] && cost[v][i] < dist[i])
+                dist[i] = cost[v][i], from[i] = v;
+    }
+    return total;
+}
 int main() {
-    int i, z;
-    char c, ch;
-
-    printf("Enter the no. of productions: ");
+    printf("Enter no. of vertices: ");
     scanf("%d", &n);
-    printf("Enter the productions (epsilon = $):\n");
-    for (i = 0; i < n; i++)
-        scanf("%s%c", a[i], &ch);
-
-    do {
-        m = 0;
-        printf("Enter the element whose FIRST & FOLLOW is to be found: ");
-        scanf(" %c", &c);
-
-        // Calculate FIRST set
-        m = 0; // Reset m for FIRST
-        first(c);
-        printf("FIRST(%c) = {", c);
-        for (i = 0; i < m; i++)
-            printf("%c", f[i]);
-        printf("}\n");
-
-        // Calculate FOLLOW set
-        m = 0; // Reset m for FOLLOW
-        follow(c);
-        printf("FOLLOW(%c) = {", c);
-        for (i = 0; i < m; i++)
-            printf("%c", f[i]);
-        printf("}\n");
-
-        printf("Do you want to continue (0/1)? ");
-        scanf("%d%c", &z, &ch);
-    } while (z == 1);
-
-    return 0;
-}
-
-void follow(char c) {
-    if (a[0][0] == c)
-        f[m++] = '$';
-    for (i = 0; i < n; i++) {
-        for (j = 2; j < strlen(a[i]); j++) {
-            if (a[i][j] == c) {
-                if (a[i][j + 1] != '\0')
-                    first(a[i][j + 1]);
-                if (a[i][j + 1] == '\0' && c != a[i][0])
-                    follow(a[i][0]);
-            }
-        }
+    printf("\nEnter the adjacency matrix:\n");
+    for (int i = 0; i < n; i++)
+        for (int j = 0; j < n; j++)
+            scanf("%d", &G[i][j]);
+    int total_cost = prims();
+    printf("\nSpanning tree matrix:\n");
+    for (int i = 0; i < n; i++) {
+        printf("\n");
+        for (int j = 0; j < n; j++)
+            printf("%d\t", S[i][j]);
     }
+    printf("\n\nTotal cost of the spanning tree = %d\n", total_cost);
 }
+....
+4.a or 6.b.Hamiltonian Cycle problem with Backtracking
 
-void first(char c) {
-    int k;
-    if (!(isupper(c)) && c != '$')
-        f[m++] = c;
-    for (k = 0; k < n; k++) {
-        if (a[k][0] == c) {
-            if (a[k][2] == '$')
-                follow(a[k][0]);
-            else if (islower(a[k][2]))
-                f[m++] = a[k][2];
-            else
-                first(a[k][2]);
-        }
-    }
-}
-
-lex:
-
-%{
 #include <stdio.h>
-%}
-%%
-"<="    { printf("Relational Operator: <=\n"); }
-">="    { printf("Relational Operator: >=\n"); }
-"=="    { printf("Relational Operator: ==\n"); }
-"!="    { printf("Relational Operator: !=\n"); }
-"<"     { printf("Relational Operator: <\n"); }
-">"     { printf("Relational Operator: >\n"); }
-
-"&&"    { printf("Logical Operator: &&\n"); }
-"||"    { printf("Logical Operator: ||\n"); }
-"!"     { printf("Logical Operator: !\n"); }
-
-.|\n    { /* ignore other characters */ }
-%%
-
-int main() {
-    yylex();
-    return 0;
-}
-int yywrap() {
+#include <stdlib.h>
+#include <time.h>
+#define V 3
+int isSafe(int v, int graph[V][V], int path[], int pos) {
+    if (!graph[path[pos - 1]][v]) return 0;
+    for (int i = 0; i < pos; i++)
+        if (path[i] == v) return 0;
     return 1;
 }
+int solve(int graph[V][V], int path[], int pos) {
+    if (pos == V)
+        return graph[path[pos - 1]][path[0]];
+    for (int v = 1; v < V; v++) {
+        if (isSafe(v, graph, path, pos)) {
+            path[pos] = v;
+            if (solve(graph, path, pos + 1)) return 1;
+            path[pos] = -1;
+        }
+    }
+    return 0;
+}
+int hamiltonianCycle(int graph[V][V]) {
+    int path[V];
+    for (int i = 0; i < V; i++) path[i] = -1;
+    path[0] = 0;
+    if (!solve(graph, path, 1)) return 0;
+    printf("Hamiltonian Cycle exists: ");
+    for (int i = 0; i < V; i++) printf("%d ", path[i]);
+    printf("\n");
+    return 1;
+}
+int main() {
+    int graph[V][V];
+    clock_t start, end;
+    double time;
+    printf("Enter the adjacency matrix for the graph (size %d x %d):\n", V, V);
+    for (int i = 0; i < V; i++)
+        for (int j = 0; j < V; j++)
+            scanf("%d", &graph[i][j]);
+    start = clock();
+    if (!hamiltonianCycle(graph))
+        printf("No Hamiltonian Cycle exists\n");
+    end = clock();
+    time = ((double)(end - start)) / CLOCKS_PER_SEC;
+    printf("Time taken to find Hamiltonian Cycle: %f seconds\n", time);
+}
+###################################################################################################################################
+8.a.8-Queens problem with Backtracking
 
-
-
+#include <stdio.h>
+#include <time.h>
+#define N 8
+int board[N][N];
+int isSafe(int row, int col) {
+    for (int i = 0; i < row; i++)
+        if (board[i][col] || (col - (row - i) >= 0 && board[i][col - (row - i)]) || (col + (row - i) < N && board[i][col + (row - i)]))
+            return 0;
+    return 1;
+}
+int solve(int row) {
+    if (row == N) return 1;
+    for (int col = 0; col < N; col++) {
+        if (isSafe(row, col)) {
+            board[row][col] = 1;
+            if (solve(row + 1)) return 1;
+            board[row][col] = 0;
+        }
+    }
+    return 0;
+}
+int main() {
+    if (solve(0)) {
+        printf("Solution:\n");
+        for (int i = 0; i < N; i++, printf("\n"))
+            for (int j = 0; j < N; j++)
+                printf("%d ", board[i][j]);
+    } else {
+        printf("No solution exists.\n");
+    }
+}
