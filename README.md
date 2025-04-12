@@ -134,3 +134,55 @@ int main() {
         printf("No solution exists.\n");
     }
 }
+
+
+
+....
+#include <stdio.h>
+#include <math.h>
+
+#define SIZE 8
+
+int queen[SIZE];
+int solutionCount = 0;
+
+int isSafe(int row, int col) {
+    for (int i = 0; i < row; i++) {
+        if (queen[i] == col || abs(queen[i] - col) == abs(i - row))
+            return 0;
+    }
+    return 1;
+}
+
+void printBoard() {
+    solutionCount++;
+    printf("Solution %d:\n", solutionCount);
+    for (int i = 0; i < SIZE; i++) {
+        for (int j = 0; j < SIZE; j++) {
+            if (queen[i] == j)
+                printf("Q ");
+            else
+                printf(". ");
+        }
+        printf("\n");
+    }
+    printf("\n");
+}
+
+void solve(int row) {
+    for (int col = 0; col < SIZE; col++) {
+        if (isSafe(row, col)) {
+            queen[row] = col;
+            if (row == SIZE - 1)
+                printBoard();
+            else
+                solve(row + 1);
+        }
+    }
+}
+
+int main() {
+    solve(0);
+    printf("Total solutions: %d\n", solutionCount);
+    return 0;
+}
