@@ -1,3 +1,81 @@
+Lexical analysis using lex tool:
+
+%{
+#include<stdio.h>
+%}
+
+%%
+
+[ \t]+                  ;
+[0-9]*\.[0-9]+|[0-9]+  { printf("\n%s is Number", yytext); }
+#.*                     { printf("\n%s is Comment", yytext); }
+[a-zA-Z][a-zA-Z0-9]*    { printf("\n%s is Identifier", yytext); }
+\"[^\"\n]*\"            { printf("\n%s is String", yytext); }
+[*%+\-]                 { printf("\nOperator: %s", yytext); }
+[(){};]                 { printf("\nSpecial Character: %s", yytext); }
+\n                      { ECHO; }
+
+%%
+
+int main() {
+    yylex(); 
+}
+
+int yywrap() {
+    return 1;
+}
+
+
+ignore redundant spaces:
+
+%{
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+void print_token(const char *type, const char *value);
+%}
+
+%%
+
+"if"|"else"|"while"|"for"|"return"|"function" { print_token("KEYWORD", yytext); }
+[a-zA-Z_][a-zA-Z0-9_]* { print_token("IDENTIFIER", yytext); }
+[0-9]+ { print_token("NUMBER", yytext); }
+[+\-*/] { print_token("OPERATOR", yytext); }
+[<>] { print_token("COMPARE OPERATOR", yytext); }
+"=" { print_token("ASSIGNMENT", yytext); }
+[()] { print_token("PARENTHESIS", yytext); }
+[{}] { print_token("BRACE", yytext); }
+[;] { print_token("SEMICOLON", yytext); }
+[ \t\n\r]+ { /* Ignore whitespace */ }
+. { printf("Unknown character: %s\n", yytext); }
+
+%%
+
+void print_token(const char *type, const char *value) {
+    printf("Token Type: %-25s Value: %s\n", type, value);
+}
+
+int main(int argc, char **argv) {
+    if (argc > 1) {
+        FILE *file = fopen(argv[1], "r");
+        if (!file) {
+            perror("fopen");
+            return 1;
+        }
+        yyin = file;
+    }
+    yylex();
+    return 0;
+}
+
+int yywrap(void) {
+    return 1;
+}
+
+
+
+
+
 FIRST AND FLOW;
 
 #include <stdio.h>
