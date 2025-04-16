@@ -1,181 +1,625 @@
-multilayer MNIST:
+FIRST AND FLOW;
 
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
 
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-from sklearn.linear_model import Perceptron
-from sklearn.datasets import fetch_openml
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import accuracy_score
-from mlxtend.plotting import plot_decision_regions
-from sklearn.decomposition import PCA
+int n, m = 0;
+char a[10][10], f[20];
 
-mnist = fetch_openml('mnist_784', version=1)
-X, y = mnist.data, mnist.target
-y = (y == '0').astype(int)
+void follow(char c);
+void first(char c);
 
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+int main() {
+    int i, z;
+    char c;
 
-scaler = StandardScaler()
-X_train = scaler.fit_transform(X_train)
-X_test = scaler.transform(X_test)
+    printf("Enter the number of productions: ");
+    scanf("%d", &n);
 
-p = Perceptron(max_iter=1000, tol=1e-3, random_state=42)
-p.fit(X_train, y_train)
+    printf("Enter the productions (use $ for epsilon):\n");
+    for(i = 0; i < n; i++) {
+        scanf("%s", a[i]);
+    }
 
-y_pred = p.predict(X_test)
-accuracy = accuracy_score(y_test, y_pred)
-print("Accuracy score:", accuracy)
+    do {
+        m = 0;
+        printf("\nEnter the element whose FIRST & FOLLOW is to be found: ");
+        scanf(" %c", &c);
 
-pca = PCA(n_components=2)
-X_train_pca = pca.fit_transform(X_train)
-p.fit(X_train_pca, y_train.to_numpy())
+        first(c);
+        printf("FIRST(%c) = { ", c);
+        for(i = 0; i < m; i++) {
+            printf("%c ", f[i]);
+        }
+        printf("}\n");
 
-plt.figure(figsize=(8, 6))
-plot_decision_regions(X_train_pca, y_train.to_numpy(), clf=p, legend=2)
-plt.title("Perceptron Decision Boundary (Reduced Features)")
-plt.xlabel("Principal Component 1")
-plt.ylabel("Principal Component 2")
-plt.show()
+        int old_m = m;
+        follow(c);
+        printf("FOLLOW(%c) = { ", c);
+        for(i = old_m; i < m; i++) {
+            printf("%c ", f[i]);
+        }
+        printf("}\n");
 
+        printf("Do you want to continue? (1 for Yes / 0 for No): ");
+        scanf("%d", &z);
+    } while(z == 1);
 
-multiclass:
-
-import tensorflow as tf
-from tensorflow.keras import layers
-import matplotlib.pyplot as plt
-
-reuters = tf.keras.datasets.reuters
-(train_data, train_labels), (test_data, test_labels) = reuters.load_data(num_words=10000)
-
-word_index = reuters.get_word_index()
-
-train_data = tf.keras.preprocessing.sequence.pad_sequences(train_data, maxlen=100)
-test_data = tf.keras.preprocessing.sequence.pad_sequences(test_data, maxlen=100)
-
-model = tf.keras.Sequential([
-    layers.Embedding(10000, 46),
-    layers.LSTM(64, return_sequences=True),
-    layers.GlobalAveragePooling1D(),
-    layers.Dense(64, activation='relu'),
-    layers.Dense(46, activation='softmax')
-])
-
-model.compile(
-    optimizer='adam',
-    loss='sparse_categorical_crossentropy',
-    metrics=['accuracy']
-)
-
-history = model.fit(
-    train_data,
-    train_labels,
-    epochs=10,
-    validation_data=(test_data, test_labels)
-)
-
-test_loss, test_acc = model.evaluate(test_data, test_labels)
-print('Test accuracy:', test_acc)
-
-plt.figure(figsize=(12, 5))
-
-plt.subplot(1, 2, 1)
-plt.plot(history.history['accuracy'], label='Train Accuracy')
-plt.plot(history.history['val_accuracy'], label='Validation Accuracy')
-plt.xlabel('Epochs')
-plt.ylabel('Accuracy')
-plt.title('Training and Validation Accuracy')
-plt.legend()
-
-plt.subplot(1, 2, 2)
-plt.plot(history.history['loss'], label='Train Loss')
-plt.plot(history.history['val_loss'], label='Validation Loss')
-plt.xlabel('Epochs')
-plt.ylabel('Loss')
-plt.title('Training and Validation Loss')
-plt.legend()
-
-plt.show()
-
-onehot:
-
-import pandas as pd
-from sklearn.preprocessing import OneHotEncoder
-
-data = {
-    'Employee id': [10, 20, 15, 25, 30],
-    'Gender': ['M', 'F', 'F', 'M', 'F'],
-    'Remarks': ['Good', 'Nice', 'Good', 'Great', 'Nice']
+    return 0;
 }
-df = pd.DataFrame(data)
-print(f"Original Employee DataFrame : \n{df}\n")
 
-df_pandas_encoded = pd.get_dummies(df, columns=['Gender', 'Remarks'], drop_first=True)
-print(f"One-Hot Encoded DataFrame using pd.get_dummies() :\n{df_pandas_encoded}\n")
+void follow(char c) {
+    int i, j;
 
-encoder = OneHotEncoder(sparse_output=False)
-categorical_colums = ['Gender', 'Remarks']
-one_hot_encoded = encoder.fit_transform(df[categorical_colums])
-one_hot_df = pd.DataFrame(one_hot_encoded,
-                          columns=encoder.get_feature_names_out(categorical_colums))
-df_sklearn_encoded = pd.concat([df.drop(categorical_colums, axis=1), one_hot_df], axis=1)
-print(f"One-Hot Encoded data using Scikit-Learn:\n{df_sklearn_encoded}\n")
+    if(a[0][0] == c) {
+        f[m++] = '$'; // Add end symbol to FOLLOW(start symbol)
+    }
 
+    for(i = 0; i < n; i++) {
+        for(j = 2; j < strlen(a[i]); j++) {
+            if(a[i][j] == c) {
+                if(a[i][j+1] != '\0') {
+                    first(a[i][j+1]);
+                } else if(c != a[i][0]) {
+                    follow(a[i][0]);
+                }
+            }
+        }
+    }
+}
 
-CNN;
+void first(char c) {
+    int k;
 
-import tensorflow as tf
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropout
+    if(!isupper(c)) {
+        f[m++] = c;
+        return;
+    }
 
-mnist = tf.keras.datasets.mnist
-(x_train, y_train), (x_test, y_test) = mnist.load_data()
-
-x_train, x_test = x_train / 255.0, x_test / 255.0
-x_train = x_train.reshape(-1, 28, 28, 1)
-x_test = x_test.reshape(-1, 28, 28, 1)
-
-model = Sequential([
-    Conv2D(32, (3, 3), activation='relu', input_shape=(28, 28, 1)),
-    MaxPooling2D((2, 2)),
-    Conv2D(64, (3, 3), activation='relu'),
-    MaxPooling2D((2, 2)),
-    Flatten(),
-    Dense(128, activation='relu'),
-    Dropout(0.2),
-    Dense(10, activation='softmax')])
-
-model.compile(
-    optimizer='adam',
-    loss='sparse_categorical_crossentropy',
-    metrics=['accuracy']
-)
-
-model.fit(x_train, y_train, epochs=10)
-model.evaluate(x_test, y_test)
+    for(k = 0; k < n; k++) {
+        if(a[k][0] == c) {
+            if(a[k][2] == '$') {
+                f[m++] = '$';
+            } else {
+                first(a[k][2]);
+            }
+        }
+    }
+}
 
 
 
+precedence parser:
 
-VGG:
+#include <stdio.h>
+#include <string.h>
 
-import numpy as np
-from keras.preprocessing import image
-from keras.applications.vgg16 import VGG16, preprocess_input, decode_predictions
+char stack[20];
+int top = -1;
 
-model = VGG16(weights='imagenet')
+void push(char item) {
+    if (top >= 19) {
+        printf("STACK OVERFLOW\n");
+        return;
+    }
+    stack[++top] = item;
+    printf("Push: %c\n", item);
+}
 
-img_path = 'io.jpg'
-img = image.load_img(img_path, target_size=(224, 224))
-img_array = image.img_to_array(img)
-img_array = np.expand_dims(img_array, axis=0)
-img_array = preprocess_input(img_array)
+char pop() {
+    if (top <= -1) {
+        printf("STACK UNDERFLOW\n");
+        return '\0';
+    }
+    char c = stack[top--];
+    printf("Popped element: %c\n", c);
+    return c;
+}
 
-predictions = model.predict(img_array)
-decoded_predictions = decode_predictions(predictions, top=3)[0]
+char TOS() {
+    if (top <= -1) {
+        printf("STACK EMPTY\n");
+        return '\0';
+    }
+    return stack[top];
+}
 
-print("Top predictions:")
-for i, (imagenet_id, label, score) in enumerate(decoded_predictions):
-    print(f"{i + 1}: {label} ({score:.2f})")
+int convert(char item) {
+    switch (item) {
+        case 'i': return 0;
+        case '+': return 1;
+        case '*': return 2;
+        case '$': return 3;
+        default: return -1;
+    }
+}
+
+int main() {
+    char pt[4][4] = {
+        { '-', '>', '>', '>' },
+        { '<', '>', '<', '>' },
+        { '<', '>', '>', '>' },
+        { '<', '<', '<', '1' }
+    };
+
+    char input[20];
+    int idx = 0;
+
+    printf("Enter input with $ at the end (e.g., i+i*i$): ");
+    scanf("%s", input);
+
+    push('$');
+
+    while (idx < strlen(input)) {
+        char topSym = TOS();
+        char current = input[idx];
+
+        int row = convert(topSym);
+        int col = convert(current);
+
+        if (row == -1 || col == -1) {
+            printf("Invalid symbol encountered: %c\n", current);
+            return 1;
+        }
+
+        if (topSym == '$' && current == '$') {
+            printf("SUCCESS\n");
+            return 0;
+        }
+
+        char action = pt[row][col];
+
+        if (action == '<' || action == '-') {
+            push(current);
+            idx++;
+        } else if (action == '>') {
+            pop();
+        } else if (action == '1') {
+            printf("SUCCESS\n");
+            return 0;
+        } else {
+            printf("FAILURE (Invalid action)\n");
+            return 1;
+        }
+    }
+
+    printf("FAILURE\n");
+    return 1;
+}
+
+RECURSIVE DESCENT PARS:
+
+#include <stdio.h>
+#include <ctype.h>
+#include <string.h>
+
+void Tp();
+void Ep();
+void E();
+void T();
+void check();
+
+int count, flag;
+char expr[50];
+
+int main() {
+    count = 0;
+    flag = 0;
+
+    printf("\nENTER AN ALGEBRAIC EXPRESSION:\t");
+    scanf("%s", expr);
+
+    E();
+
+    if ((strlen(expr) == count) && (flag == 0))
+        printf("\nTHE EXPRESSION %s IS VALID\n", expr);
+    else
+        printf("\nTHE EXPRESSION %s IS INVALID\n", expr);
+
+    return 0;
+}
+
+void E() {
+    T();
+    Ep();
+}
+
+void Ep() {
+    if (expr[count] == '+') {
+        count++;
+        T();
+        Ep();
+    }
+}
+
+void T() {
+    check();
+    Tp();
+}
+
+void Tp() {
+    if (expr[count] == '*') {
+        count++;
+        check();
+        Tp();
+    }
+}
+
+void check() {
+    if (isalnum(expr[count])) {
+        count++;
+    } else if (expr[count] == '(') {
+        count++;
+        E();
+        if (expr[count] == ')') {
+            count++;
+        } else {
+            flag = 1;
+        }
+    } else {
+        flag = 1;
+    }
+}
+
+
+LL(1) parse:
+
+#include <stdio.h>
+#include <string.h>
+
+int stack[20], top = -1;
+
+void push(int item) {
+    if (top >= 19) {
+        printf("Stack Overflow\n");
+        return;
+    }
+    stack[++top] = item;
+}
+
+int pop() {
+    if (top <= -1) {
+        printf("Stack Underflow\n");
+        return -1;
+    }
+    return stack[top--];
+}
+
+char convert(int item) {
+    switch (item) {
+        case 0: return 'E';
+        case 1: return 'e';
+        case 2: return 'T';
+        case 3: return 't';
+        case 4: return 'F';
+        case 5: return 'i';
+        case 6: return '+';
+        case 7: return '*';
+        case 8: return '(';
+        case 9: return ')';
+        case 10: return '$';
+        default: return '?';
+    }
+}
+
+int main() {
+    int m[5][11] = {0};
+
+    m[0][5] = m[0][8] = 21;
+    m[1][6] = 621;
+    m[1][9] = m[1][10] = -2;
+    m[2][5] = m[2][8] = 43;
+    m[3][6] = m[3][9] = m[3][10] = -2;
+    m[3][7] = 743;
+    m[4][5] = 5;
+    m[4][8] = 809;
+
+    char ips[20];
+    int ip[20], i, j, k, a, b, t;
+
+    printf("\nEnter the input string with $ at the end (e.g., i+i*i$):\n");
+    scanf("%s", ips);
+
+    for (i = 0; i < strlen(ips); i++) {
+        switch (ips[i]) {
+            case 'E': k = 0; break;
+            case 'e': k = 1; break;
+            case 'T': k = 2; break;
+            case 't': k = 3; break;
+            case 'F': k = 4; break;
+            case 'i': k = 5; break;
+            case '+': k = 6; break;
+            case '*': k = 7; break;
+            case '(': k = 8; break;
+            case ')': k = 9; break;
+            case '$': k = 10; break;
+            default: 
+                printf("Invalid input\n");
+                return 1;
+        }
+        ip[i] = k;
+    }
+    ip[i] = -1;
+
+    push(10);
+    push(0);
+
+    i = 0;
+    printf("\n\tSTACK\t\tINPUT\n");
+
+    while (1) {
+        printf("\t");
+        for (j = 0; j <= top; j++)
+            printf("%c", convert(stack[j]));
+        printf("\t\t");
+
+        for (j = i; ip[j] != -1; j++)
+            printf("%c", convert(ip[j]));
+        printf("\n");
+
+        a = stack[top];
+        b = ip[i];
+
+        if (a == b && a == 10) {
+            printf("\nSUCCESS: INPUT STRING PARSED SUCCESSFULLY.\n");
+            break;
+        } else if (a == b) {
+            pop();
+            i++;
+        } else if (a < 5 && b >= 0 && b <= 10 && m[a][b] != 0) {
+            t = m[a][b];
+            pop();
+            if (t != -2) {
+                while (t > 0) {
+                    push(t % 10);
+                    t /= 10;
+                }
+            }
+        } else {#include<stdio.h>
+#define TOGETHER 8
+
+int main(void)
+{
+    int i = 0;
+    int entries = 50;
+    int repeat;
+    int left = 0;
+    
+    repeat = (entries / TOGETHER);
+    left = (entries % TOGETHER);
+    
+    while (repeat--) {
+        printf("process(%d)\n", i);
+        printf("process(%d)\n", i + 1);
+        printf("process(%d)\n", i + 2);
+        printf("process(%d)\n", i + 3);
+        printf("process(%d)\n", i + 4);
+        printf("process(%d)\n", i + 5);
+        printf("process(%d)\n", i + 6);
+        printf("process(%d)\n", i + 7);
+        i += TOGETHER;
+    }
+    
+    switch (left) {
+        case 7: printf("process(%d)\n", i + 6);
+        case 6: printf("process(%d)\n", i + 5);
+        case 5: printf("process(%d)\n", i + 4);
+        case 4: printf("process(%d)\n", i + 3);
+        case 3: printf("process(%d)\n", i + 2);
+        case 2: printf("process(%d)\n", i + 1);
+        case 1: printf("process(%d)\n", i);
+        case 0: break;
+    }
+    
+    return 0;
+}
+
+constant propagation:
+
+#include<stdio.h>
+#include<string.h>
+#include<ctype.h>
+#include<stdlib.h>
+
+void input();
+void output();
+void change(int p, char *res);
+void constant();
+
+struct expr {
+    char op[2], op1[5], op2[5], res[5];
+    int flag;
+} arr[10];
+
+int n;
+
+void main() {
+    input();
+    constant();
+    output();
+}
+
+void input() {
+    int i;
+    printf("\nEnter the maximum number of expressions: ");
+    scanf("%d", &n);
+    printf("\nEnter the input (operation, operand1, operand2, result):\n");
+    for(i = 0; i < n; i++) {
+        scanf("%s", arr[i].op);
+        scanf("%s", arr[i].op1);
+        scanf("%s", arr[i].op2);
+        scanf("%s", arr[i].res);
+        arr[i].flag = 0;
+    }
+}
+
+void constant() {
+    int i;
+    int op1, op2, res;
+    char op, res1[5];
+
+    for(i = 0; i < n; i++) {
+        if(isdigit(arr[i].op1[0]) && isdigit(arr[i].op2[0]) || strcmp(arr[i].op, "=") == 0) {
+            op1 = atoi(arr[i].op1);
+            op2 = atoi(arr[i].op2);
+            op = arr[i].op[0];
+            
+            switch(op) {
+                case '+':
+                    res = op1 + op2;
+                    break;
+                case '-':
+                    res = op1 - op2;
+                    break;
+                case '*':
+                    res = op1 * op2;
+                    break;
+                case '/':
+                    res = op1 / op2;
+                    break;
+                case '=':
+                    res = op1;
+                    break;
+                default:
+                    res = 0;
+                    break;
+            }
+
+            sprintf(res1, "%d", res);
+            arr[i].flag = 1;
+            change(i, res1);
+        }
+    }
+}
+
+void output() {
+    int i;
+    printf("\nOptimized code is:\n");
+    for(i = 0; i < n; i++) {
+        if(!arr[i].flag) {
+            printf("%s %s %s %s\n", arr[i].op, arr[i].op1, arr[i].op2, arr[i].res);
+        }
+    }
+}
+
+void change(int p, char *res) {
+    int i;
+    for(i = p + 1; i < n; i++) {
+        if(strcmp(arr[p].res, arr[i].op1) == 0) {
+            strcpy(arr[i].op1, res);
+        } else if(strcmp(arr[p].res, arr[i].op2) == 0) {
+            strcpy(arr[i].op2, res);
+        }
+    }
+}
+
+            printf("\nERROR: INVALID STRING.\n");
+            break;
+        }
+    }
+
+    return 0;
+}
+
+LOOP UNROLLING:
+
+#include<stdio.h>
+#include<string.h>
+#include<ctype.h>
+#include<stdlib.h>
+
+void input();
+void output();
+void change(int p, char *res);
+void constant();
+
+struct expr {
+    char op[2], op1[5], op2[5], res[5];
+    int flag;
+} arr[10];
+
+int n;
+
+void main() {
+    input();
+    constant();
+    output();
+}
+
+void input() {
+    int i;
+    printf("\nEnter the maximum number of expressions: ");
+    scanf("%d", &n);
+    printf("\nEnter the input (operation, operand1, operand2, result):\n");
+    for(i = 0; i < n; i++) {
+        scanf("%s", arr[i].op);
+        scanf("%s", arr[i].op1);
+        scanf("%s", arr[i].op2);
+        scanf("%s", arr[i].res);
+        arr[i].flag = 0;
+    }
+}
+
+void constant() {
+    int i;
+    int op1, op2, res;
+    char op, res1[5];
+
+    for(i = 0; i < n; i++) {
+        if(isdigit(arr[i].op1[0]) && isdigit(arr[i].op2[0]) || strcmp(arr[i].op, "=") == 0) {
+            op1 = atoi(arr[i].op1);
+            op2 = atoi(arr[i].op2);
+            op = arr[i].op[0];
+            
+            switch(op) {
+                case '+':
+                    res = op1 + op2;
+                    break;
+                case '-':
+                    res = op1 - op2;
+                    break;
+                case '*':
+                    res = op1 * op2;
+                    break;
+                case '/':
+                    res = op1 / op2;
+                    break;
+                case '=':
+                    res = op1;
+                    break;
+                default:
+                    res = 0;
+                    break;
+            }
+
+            sprintf(res1, "%d", res);
+            arr[i].flag = 1;
+            change(i, res1);
+        }
+    }
+}
+
+void output() {
+    int i;
+    printf("\nOptimized code is:\n");
+    for(i = 0; i < n; i++) {
+        if(!arr[i].flag) {
+            printf("%s %s %s %s\n", arr[i].op, arr[i].op1, arr[i].op2, arr[i].res);
+        }
+    }
+}
+
+void change(int p, char *res) {
+    int i;
+    for(i = p + 1; i < n; i++) {
+        if(strcmp(arr[p].res, arr[i].op1) == 0) {
+            strcpy(arr[i].op1, res);
+        } else if(strcmp(arr[p].res, arr[i].op2) == 0) {
+            strcpy(arr[i].op2, res);
+        }
+    }
+}
+
+
+
